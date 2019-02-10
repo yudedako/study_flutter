@@ -16,6 +16,12 @@ class MyApp extends StatelessWidget {
         canvasColor: const Color(0xFFfafafa),
       ),
       home: new FirstScreen(),
+      initialRoute: '/first',
+      routes: {
+        '/first': (context) => FirstScreen(),
+        '/second': (context) => SecondScreen('Second'),
+        '/third': (context) => SecondScreen('Third'),
+      },
     );
   }
 }
@@ -28,8 +34,8 @@ class FirstScreen extends StatefulWidget {
 }
 
 class _FirstScreenState extends State<FirstScreen> {
-  final _controller = TextEditingController();
-  String _input;
+  //final _controller = TextEditingController();
+  //String _input;
 
   @override
   Widget build(BuildContext context) {
@@ -38,26 +44,32 @@ class _FirstScreenState extends State<FirstScreen> {
         title: Text('Home'),
       ),
 
-      body: Column(
-        children: <Widget>[
-          Text('Home Screen',
-            style: TextStyle(fontSize: 32.0)
-          ),
-          Padding(
-            padding: EdgeInsets.all(10.0),
-          ),
-          TextField(
-            controller: _controller,
-            style: TextStyle(
-              fontSize: 28.0,
-              color: const Color(0xFFFF0000),
-              fontWeight: FontWeight.w400,
-              fontFamily: "Roboto"
-            ),
-            onChanged: changeField,
-          ),
-        ],
+      body: Center(
+        child: Text('Home Screen',
+          style: TextStyle(fontSize: 32.0),
+        ),
       ),
+
+      // body: Column(
+      //   children: <Widget>[
+      //     Text('Home Screen',
+      //       style: TextStyle(fontSize: 32.0)
+      //     ),
+      //     Padding(
+      //       padding: EdgeInsets.all(10.0),
+      //     ),
+      //     TextField(
+      //       controller: _controller,
+      //       style: TextStyle(
+      //         fontSize: 28.0,
+      //         color: const Color(0xFFFF0000),
+      //         fontWeight: FontWeight.w400,
+      //         fontFamily: "Roboto"
+      //       ),
+      //       onChanged: changeField,
+      //     ),
+      //   ],
+      // ),
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,
@@ -75,16 +87,17 @@ class _FirstScreenState extends State<FirstScreen> {
 
         onTap: (int value) {
           if (value == 1)
-            Navigator.push(
+            Navigator.pushNamed(
               context,
-              MaterialPageRoute(builder: (context) => SecondScreen(_input)),
+              '/second',
+              //MaterialPageRoute(builder: (context) => SecondScreen(_input)),
             );
         },
       ),
     );
   }
 
-  void changeField(String val) => _input = val;
+  //void changeField(String val) => _input = val;
 }
 
 class SecondScreen extends StatelessWidget {
@@ -101,7 +114,7 @@ class SecondScreen extends StatelessWidget {
 
       body: Center(
         child: Text(
-          'you typed: "$_value".',
+          '$_value Screen',
           style: TextStyle(fontSize: 32.0)
         ),
       ),
@@ -122,6 +135,11 @@ class SecondScreen extends StatelessWidget {
 
         onTap: (int value) {
           if (value == 0) Navigator.pop(context);
+          if (value == 1)
+            Navigator.pushNamed(
+              context,
+              '/third',
+            );
         },
       ),
     );
