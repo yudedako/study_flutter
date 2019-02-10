@@ -20,7 +20,17 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class FirstScreen extends StatelessWidget {
+class FirstScreen extends StatefulWidget {
+  FirstScreen({Key key}) : super(key: key); // コンストラクタ
+
+  @override
+  _FirstScreenState createState() => new _FirstScreenState();
+}
+
+class _FirstScreenState extends State<FirstScreen> {
+  final _controller = TextEditingController();
+  String _input;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,12 +38,25 @@ class FirstScreen extends StatelessWidget {
         title: Text('Home'),
       ),
 
-      body: Center(
-        child: Container(
-          child: Text('Home Screen',
+      body: Column(
+        children: <Widget>[
+          Text('Home Screen',
             style: TextStyle(fontSize: 32.0)
           ),
-        ),
+          Padding(
+            padding: EdgeInsets.all(10.0),
+          ),
+          TextField(
+            controller: _controller,
+            style: TextStyle(
+              fontSize: 28.0,
+              color: const Color(0xFFFF0000),
+              fontWeight: FontWeight.w400,
+              fontFamily: "Roboto"
+            ),
+            onChanged: changeField,
+          ),
+        ],
       ),
 
       bottomNavigationBar: BottomNavigationBar(
@@ -54,15 +77,21 @@ class FirstScreen extends StatelessWidget {
           if (value == 1)
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => SecondScreen()),
+              MaterialPageRoute(builder: (context) => SecondScreen(_input)),
             );
         },
       ),
     );
   }
+
+  void changeField(String val) => _input = val;
 }
 
 class SecondScreen extends StatelessWidget {
+  final String _value;
+
+  SecondScreen(this._value);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,7 +100,8 @@ class SecondScreen extends StatelessWidget {
       ),
 
       body: Center(
-        child: Text('Next Screen',
+        child: Text(
+          'you typed: "$_value".',
           style: TextStyle(fontSize: 32.0)
         ),
       ),
