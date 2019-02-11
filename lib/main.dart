@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'package:http/http.dart';
+import 'package:html/dom.dart' as dom;
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:collection/collection.dart';
-import 'package:path/path.dart';
+import 'package:webfeed/webfeed.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(new MyApp());
@@ -15,221 +16,236 @@ class MyApp extends StatelessWidget {
       title: 'Generated App',
       theme: new ThemeData(
         primarySwatch: Colors.blue,
-        primaryColor: const Color(0xFF2196f3),
-        accentColor: const Color(0xFF2196f3),
+        primaryColor: const Color(0xFFe91e63),
+        accentColor: const Color(0xFFe91e63),
         canvasColor: const Color(0xFFfafafa),
       ),
-      home: new FirstScreen(),
-      initialRoute: '/home',
-      routes: {
-        '/home': (context) => FirstScreen(),
-        '/list': (context) => SecondScreen(),
-      },
+      home: new RssListPage(),
     );
   }
 }
 
-class FirstScreen extends StatefulWidget {
-  FirstScreen({Key key}) : super(key: key); // コンストラクタ
+class RssListPage extends StatelessWidget {
+  final List<String> names = [
+    '主要ニュース',
+    '国際情勢',
+    '国内の出来事',
+    'IT関係'
+  ];
 
-  @override
-  _FirstScreenState createState() => new _FirstScreenState();
-}
-
-class _FirstScreenState extends State<FirstScreen> {
-  final _controllerA = TextEditingController();
-  final _controllerB = TextEditingController();
-  final _controllerC = TextEditingController();
-
-  final TextStyle styleA = TextStyle(
-    fontSize: 28.0,
-    color: Colors.black87,
-  );
-  final TextStyle styleB = TextStyle(
-    fontSize: 24.0,
-    color: Colors.black87,
-  );
+  final List<String> links = [
+    'https://news.yahoo.co.jp/pickup/rss.xml',
+    'https://news.yahoo.co.jp/pickup/world/rss.xml',
+    'https://news.yahoo.co.jp/pickup/domestic/rss.xml',
+    'https://news.yahoo.co.jp/pickup/computer/rss.xml'
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home'),
+        title: Text('Yahoo! Checker'),
       ),
 
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[
-            Text('Home Screen',
-              style: TextStyle(fontSize: 32.0),
-            ),
-
-            Text( 'Name:', style: styleB, ),
-            TextField(
-              controller: _controllerA,
-              style: styleA,
-            ),
-
-            Text( 'Mail:', style: styleB, ),
-            TextField(
-              controller: _controllerB,
-              style: styleA,
-            ),
-
-            Text( 'Tel:', style: styleB, ),
-            TextField(
-              controller: _controllerC,
-              style: styleA,
-            ),
-          ],
+      body: Center(
+        child: ListView(
+          padding: EdgeInsets.all(10.0),
+          children: items(context),
         ),
       ),
-
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            title: Text('add'),
-            icon: Icon(Icons.home),
-          ),
-          BottomNavigationBarItem(
-            title: Text('list'),
-            icon: Icon(Icons.list),
-          ),
-        ],
-
-        onTap: (int value) {
-          if (value == 1) {
-            Navigator.pushNamed(context, '/list');
-          }
-        },
-      ),
-
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.save),
-        onPressed: () {
-          saveData();
-          showDialog(
-            context: context,
-            builder: (BuildContext context) => AlertDialog(
-              title: Text("saved!"),
-              content: Text("insert data  into database."),
-            )
-          );
-        },
-      ),
     );
   }
 
-  void saveData() async {
-    String dbPath = await getDatabasesPath();
-    String path = join(dbPath, "mydata.db");
+  List<Widget> items(BuildContext context) {
+    List<Widget> items = [];
+    for (var i = 0;i < names.length;i++) {
+      items.add(
+        ListTile(
+          contentPadding: EdgeInsets.all(10.0),
+          title: Text(names[i],
+            style: TextStyle(fontSize: 24.0),
+          ),
 
-    String data1 = _controllerA.text;
-    String data2 = _controllerB.text;
-    String data3 = _controllerC.text;
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MyRssPage(
+                  title: names[i],
+                  url: links[i]
+                ),
+              ),
+            );
+          },
+        )
+      );
+    }
 
-    String query = 'INSERT INTO mydata(name, mail, tel) VALUES("$data1", "$data2", "$data3")';
-
-    Database database = await openDatabase(
-      path, version: 1, onCreate: (Database db, int version) async {
-        await db.execute(
-          "CREATE TABLE IF NOT EXISTS mydata (id INTEGER PRIMARY KEY, name TEXT, mail TEXT, tel TEXT)"
-        );
-      }
-    );
-
-    await database.transaction((txn) async {
-      int id = await txn.rawInsert(query);
-      print("insert: $id");
-    });
-
-    setState(() {
-      _controllerA.text = '';
-      _controllerB.text = '';
-      _controllerC.text = '';
-    });
+    return items;
   }
 }
 
-class SecondScreen extends StatefulWidget {
-  SecondScreen({ Key key }) : super(key: key);
+class MyRssPage extends StatefulWidget {
+  final String title;
+  final String url;
+
+  MyRssPage({@required this.title, @required this.url});
 
   @override
-  _SecondScreenState createState() => new _SecondScreenState();
+  _MyRssPageState createState() => new _MyRssPageState(title: title, url: url);
 }
 
-class _SecondScreenState extends State <SecondScreen> {
+class _MyRssPageState extends State<MyRssPage> {
+  final String title;
+  final String url;
+
   List<Widget> _items = <Widget>[];
-
-  @override
-  void initState() {
-    super.initState();
-    getItems();
-  }
+  _MyRssPageState({
+    @required this.title,
+    @required this.url
+  }) { getItems(); }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("List"),
+        title: Text(title),
       ),
 
-      body: ListView(
-        children: _items,
-      ),
-
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            title: Text('add'),
-            icon: Icon(Icons.home),
-          ),
-          BottomNavigationBarItem(
-            title: Text('list'),
-            icon: Icon(Icons.list),
-          ),
-        ],
-
-        onTap: (int index) {
-          if (index == 0) {
-            Navigator.pop(context);
-          }
-        },
+      body: Center(
+        child: ListView(
+          padding: EdgeInsets.all(10.0),
+          children: _items,
+        ),
       ),
     );
   }
 
   void getItems() async {
     List<Widget> list = <Widget>[];
-    String dbPath = await getDatabasesPath();
-    String path = join(dbPath, "mydata.db");
+    Response res = await get(url);
 
-    Database database = await openDatabase(
-      path, version: 1, onCreate: (Database db, int version) async {
-        await db.execute(
-          "CREATE TABLE IF NOT EXISTS mydata (id INTEGER PRIMARY KEY, name TEXT, mail TEXT, tel TEXT)"
-        );
-      }
-    );
+    var feed = new RssFeed.parse(res.body);
 
-    List<Map> result = await database.rawQuery('SELECT * FROM mydata');
-
-    for (Map item in result) {
-      list.add(
-        ListTile(
-          title: Text(item['name']),
-          subtitle: Text(item['mail'] + ' ' + item['tel']),
-        )
-      );
+    for (RssItem item in feed.items) {
+      list.add(ListTile(
+        contentPadding: EdgeInsets.all(10.0),
+        title: Text(
+          item.title,
+          style: TextStyle(
+            fontSize: 24.0,
+          ),
+        ),
+        subtitle: Text(
+          item.pubDate
+        ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ItemDetailsPage(
+                item: item, title: title, url: url
+              ),
+            ),
+          );
+        },
+      ));
     }
 
     setState(() {
       _items = list;
+    });
+  }
+}
+
+class ItemDetailsPage extends StatefulWidget {
+  final String title;
+  final String url;
+  final RssItem item;
+
+  ItemDetailsPage({
+    @required this.item,
+    @required this.title,
+    @required this.url,
+  });
+
+  @override
+  _ItemDetails createState() => new _ItemDetails(item: item);
+}
+
+class _ItemDetails extends State<ItemDetailsPage> {
+  RssItem item;
+  Widget _widget = Text('wait...',);
+  _ItemDetails({@required this.item});
+  
+  @override
+  void initState() {
+    super.initState();
+    getItem();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(item.title),
+      ),
+
+      body: _widget,
+    );
+  }
+
+  void getItem() async {
+    Response res = await get(item.link);
+    dom.Document doc = dom.Document.html(res.body);
+    dom.Element hbody = doc.querySelector('.hbody');
+    dom.Element htitle = doc.querySelector('.newsTitle a');
+    dom.Element newslink = doc.querySelector('.newsLink');
+
+    print(newslink.attributes['href']);
+
+    setState(() {
+      _widget = SingleChildScrollView(
+        child: Container(
+          child: Column(
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.all(10.0),
+                child: Text(
+                  htitle.text,
+                  style: TextStyle(
+                    fontSize: 22.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              Padding(
+                padding: EdgeInsets.all(10.0),
+                child: Text(
+                  hbody.text,
+                  style: TextStyle(
+                    fontSize: 20.0,
+                  )
+                ),
+              ),
+
+              Padding(
+                padding: EdgeInsets.all(10.0),
+                child: RaisedButton(
+                  child: Text(
+                    '続きを読む...',
+                    style: TextStyle(fontSize: 18.0),
+                  ),
+                  onPressed: () {
+                    launch(newslink.attributes['href']);
+                  },
+                ),
+              )
+            ],
+          ),
+        ),
+      );
     });
   }
 }
